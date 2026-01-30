@@ -1,6 +1,6 @@
 /**
  * MESBG Army Builder - Full Integrated Logic
- * Features: Warbands, Smart Stacking, Bow Limits, GitHub Pages Compatibility
+ * Features: Warbands, Smart Stacking, Bow Limits, Army Rules, GitHub Compatibility
  */
 
 // --- 1. Global State ---
@@ -64,7 +64,7 @@ armySelector.addEventListener('change', async (e) => {
         renderCatalog();
     } catch (e) {
         console.error("Load Error:", e);
-        alert(`Failed to load ${fileName}. Check file case-sensitivity on GitHub!`);
+        alert(`Failed to load ${fileName}. Check file case-sensitivity and JSON syntax!`);
     }
 });
 
@@ -95,7 +95,6 @@ function renderWarriorCatalog() {
     if (!currentArmyData) return;
 
     warriorGrid.innerHTML = currentArmyData.warriors.map(warrior => {
-        // Create a button for each active warband so user can choose where warrior goes
         const warbandButtons = warbands.map((wb, index) => `
             <button class="btn-mini-add" onclick="addUnitToWarband(${wb.id}, '${warrior.id}')">
                 Add to Warband ${index + 1}
@@ -134,7 +133,7 @@ window.createNewWarband = (heroId) => {
     };
     warbands.push(newWarband);
     updateArmyUI();
-    renderWarriorCatalog(); // Refresh catalog to show new "Add to Warband" button
+    renderWarriorCatalog();
 };
 
 window.addUnitToWarband = (warbandId, unitId) => {
@@ -172,7 +171,7 @@ window.removeWarband = (wbId) => {
     renderWarriorCatalog();
 };
 
-// --- 7. Smart Stacking & UI Update ---
+// --- 7. UI Update with Army Rules & Stacking ---
 
 function updateArmyUI() {
     let grandTotal = 0;
@@ -180,6 +179,24 @@ function updateArmyUI() {
     let totalBows = 0;
     
     selectedContainer.innerHTML = '';
+
+    // --- Render Army Rule Section ---
+    if (currentArmyData) {
+        const ruleDiv = document.createElement('div');
+        ruleDiv.className = 'army-rule-box';
+        
+        const displayTitle = currentArmyData.armyName || currentArmyData.name || "Army List";
+        // Convert \n in JSON to <br> for HTML
+        const displayRule = currentArmyData.armyRule 
+            ? currentArmyData.armyRule.replace(/\n/g, '<br>') 
+            : "No specific army rules found.";
+
+        ruleDiv.innerHTML = `
+            <div class="rule-header">${displayTitle}</div>
+            <div class="rule-content">${displayRule}</div>
+        `;
+        selectedContainer.appendChild(ruleDiv);
+    }
 
     warbands.forEach((wb, wbIdx) => {
         const wbDiv = document.createElement('div');
@@ -190,12 +207,12 @@ function updateArmyUI() {
         let heroCost = wb.hero.points;
         wb.hero.selectedOptions.forEach(oid => {
             const opt = wb.hero.options.find(o => o.id === oid);
-            heroCost += opt.points;
+            if (opt) heroCost += opt.points;
         });
         if (hasBow(wb.hero)) totalBows++;
         grandTotal += heroCost;
 
-        // Smart Grouping for Warriors (Stacking identical units)
+        // Smart Grouping for Warriors
         const groups = {};
         wb.units.forEach(u => {
             const configKey = u.id + "|" + [...u.selectedOptions].sort().join(',');
@@ -209,7 +226,8 @@ function updateArmyUI() {
             totalModels += group.count;
             let unitCostPerModel = group.data.points;
             group.data.selectedOptions.forEach(oid => {
-                unitCostPerModel += group.data.options.find(o => o.id === oid).points;
+                const opt = group.data.options.find(o => o.id === oid);
+                if (opt) unitCostPerModel += opt.points;
             });
             
             if (hasBow(group.data)) totalBows += group.count;
@@ -299,7 +317,6 @@ window.adjustCount = (wbId, unitId, optionsStr, delta) => {
     const options = optionsStr ? optionsStr.split(',') : [];
     if (delta > 0) {
         addUnitToWarband(wbId, unitId);
-        // Ensure new unit gets same gear as the stack
         wb.units[wb.units.length - 1].selectedOptions = [...options];
     } else {
         const idx = wb.units.findIndex(u => u.id === unitId && u.selectedOptions.sort().join(',') === options.sort().join(','));
@@ -311,9 +328,6 @@ window.adjustCount = (wbId, unitId, optionsStr, delta) => {
 window.modifyStackGear = (wbId, unitId, currentOptionsStr, toggleOptId) => {
     const wb = warbands.find(w => w.id === wbId);
     const currentOpts = currentOptionsStr ? currentOptionsStr.split(',') : [];
-    
-    // Modify one unit from the group. Stacking logic will automatically
-    // separate it in the next UI refresh because its configKey changes.
     const unit = wb.units.find(u => u.id === unitId && u.selectedOptions.sort().join(',') === currentOpts.sort().join(','));
     if (unit) {
         const idx = unit.selectedOptions.indexOf(toggleOptId);
