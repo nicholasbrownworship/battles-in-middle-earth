@@ -1,24 +1,34 @@
 /**
- * MESBG Army Builder - Warband Edition
+ * MESBG Army Builder - Full Warband Logic
  */
 
+// --- State ---
 let currentArmyData = null;
-let warbands = []; // Array of objects: { id, hero: {}, units: [] }
+let warbands = []; 
 
+// --- Constants ---
+const RANKS = {
+    "Legend": 18,
+    "Valor": 15,
+    "Fortitude": 12,
+    "Minor": 6,
+    "Independent": 0
+};
+
+// --- DOM Elements ---
 const armySelector = document.getElementById('army-selector');
 const heroGrid = document.getElementById('hero-grid');
 const warriorGrid = document.getElementById('warrior-grid');
 const selectedContainer = document.getElementById('selected-units');
 const pointsDisplay = document.getElementById('total-points');
 
-const RANKS = {
-    "Legend": 18, "Valor": 15, "Fortitude": 12, "Minor": 6, "Independent": 0
-};
+// --- Initialization ---
 
 async function initApp() {
     try {
         const response = await fetch('./data/armies.json');
         const armyList = await response.json();
+        
         armySelector.innerHTML = '<option value="">-- Choose an Army --</option>';
         armyList.forEach(army => {
             const opt = document.createElement('option');
@@ -26,36 +36,107 @@ async function initApp() {
             opt.textContent = army.name;
             armySelector.appendChild(opt);
         });
-    } catch (e) { console.error("Manifest error", e); }
+    } catch (e) {
+        console.error("Could not load manifest. Ensure data/armies.json exists.", e);
+    }
 }
 
-// --- Warband Management ---
+// --- Loading Army Data ---
 
-window.addWarband = (heroId) => {
-    const heroTemplate = currentArmyData.heroes.find(h => h.id === heroId);
+armySelector.addEventListener('change', async (e) => {
+    const fileName = e.target.value;
+    if (!fileName) return;
+
+    try {
+        const response = await fetch(`./data/${fileName}`);
+        currentArmyData = await response.json();
+        
+        // Reset state for new army
+        warbands = [];
+        updateArmyUI();
+        renderCatalog();
+    } catch (e) {
+        console.error("Error loading army file:", e);
+    }
+});
+
+// --- Catalog Rendering ---
+
+function renderCatalog() {
+    // Render Heroes
+    heroGrid.innerHTML = currentArmyData.heroes.map(hero => `
+        <div class="unit-card">
+            <div class="image-container">
+                <img src="${hero.image}" alt="${hero.name}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                <div class="points-badge">${hero.points} pts</div>
+            </div>
+            <div class="unit-card-body">
+                <h3>${hero.name}</h3>
+                <small class="rank-badge">${hero.rank}</small>
+                <button class="btn-add" onclick="createNewWarband('${hero.id}')">Start Warband</button>
+            </div>
+        </div>
+    `).join('');
+
+    // Render Warriors
+    renderWarriorCatalog();
+}
+
+function renderWarriorCatalog() {
+    warriorGrid.innerHTML = currentArmyData.warriors.map(warrior => {
+        // Create a button for each active warband
+        const warbandButtons = warbands.map((wb, index) => `
+            <button class="btn-mini-add" onclick="addUnitToWarband(${wb.id}, '${warrior.id}')">
+                Add to Warband ${index + 1}
+            </button>
+        `).join('');
+
+        return `
+            <div class="unit-card">
+                <div class="image-container">
+                    <img src="${warrior.image}" alt="${warrior.name}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                    <div class="points-badge">${warrior.points} pts</div>
+                </div>
+                <div class="unit-card-body">
+                    <h3>${warrior.name}</h3>
+                    <div class="warband-selector-list">
+                        ${warbandButtons || '<small style="color:gray">Add a Hero first</small>'}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// --- Core Logic ---
+
+window.createNewWarband = (heroId) => {
+    const template = currentArmyData.heroes.find(h => h.id === heroId);
     const newWarband = {
         id: Date.now(),
-        hero: { ...JSON.parse(JSON.stringify(heroTemplate)), selectedOptions: [] },
+        hero: { 
+            ...JSON.parse(JSON.stringify(template)), 
+            instanceId: Date.now() + 1,
+            selectedOptions: [] 
+        },
         units: []
     };
     warbands.push(newWarband);
     updateArmyUI();
+    renderWarriorCatalog(); // Refresh buttons on the left
 };
 
 window.addUnitToWarband = (warbandId, unitId) => {
-    const warband = warbands.find(w => w.id === warbandId);
+    const wb = warbands.find(w => w.id === warbandId);
     const template = currentArmyData.warriors.find(u => u.id === unitId);
     
-    // Check capacity
-    const currentCount = warband.units.length;
-    const maxCount = RANKS[warband.hero.rank] || 0;
-    
-    if (currentCount >= maxCount) {
-        alert("This hero cannot lead any more warriors!");
+    const max = RANKS[wb.hero.rank] || 0;
+    if (wb.units.length >= max) {
+        alert(`${wb.hero.name} cannot lead more than ${max} warriors.`);
         return;
     }
 
-    warband.units.push({
+    wb.units.push({
         ...JSON.parse(JSON.stringify(template)),
         instanceId: Date.now() + Math.random(),
         selectedOptions: []
@@ -63,9 +144,9 @@ window.addUnitToWarband = (warbandId, unitId) => {
     updateArmyUI();
 };
 
-window.toggleWargear = (warbandId, instanceId, optionId, isHero = false) => {
-    const warband = warbands.find(w => w.id === warbandId);
-    const unit = isHero ? warband.hero : warband.units.find(u => u.instanceId === instanceId);
+window.toggleWargear = (warbandId, instanceId, optionId, isHero) => {
+    const wb = warbands.find(w => w.id === warbandId);
+    const unit = isHero ? wb.hero : wb.units.find(u => u.instanceId === instanceId);
     
     const idx = unit.selectedOptions.indexOf(optionId);
     if (idx > -1) unit.selectedOptions.splice(idx, 1);
@@ -74,94 +155,102 @@ window.toggleWargear = (warbandId, instanceId, optionId, isHero = false) => {
     updateArmyUI();
 };
 
-// --- Rendering Logic ---
+window.removeWarband = (wbId) => {
+    warbands = warbands.filter(w => w.id !== wbId);
+    updateArmyUI();
+    renderWarriorCatalog();
+};
+
+// --- UI Refresh & Grouping ---
 
 function updateArmyUI() {
     let grandTotal = 0;
     selectedContainer.innerHTML = '';
 
-    warbands.forEach(wb => {
-        const wbEl = document.createElement('div');
-        wbEl.className = 'warband-container';
-        
-        // 1. Calculate Hero
+    warbands.forEach((wb, wbIdx) => {
+        const wbDiv = document.createElement('div');
+        wbDiv.className = 'warband-container';
+
+        // Hero Calculation
         let heroCost = wb.hero.points;
         wb.hero.selectedOptions.forEach(oid => {
             heroCost += wb.hero.options.find(o => o.id === oid).points;
         });
         grandTotal += heroCost;
 
-        // 2. Group Warriors by Configuration (ID + Options)
+        // Smart Grouping for Warriors
         const groups = {};
         wb.units.forEach(u => {
-            const configKey = u.id + "|" + u.selectedOptions.sort().join(',');
+            // Sort options so that [shield, bow] is same as [bow, shield]
+            const configKey = u.id + "|" + [...u.selectedOptions].sort().join(',');
             if (!groups[configKey]) {
-                groups[configKey] = { data: u, count: 0, instances: [] };
+                groups[configKey] = { data: u, count: 0 };
             }
             groups[configKey].count++;
-            groups[configKey].instances.push(u.instanceId);
         });
 
-        // 3. Build HTML
-        wbEl.innerHTML = `
-            <div class="warband-header">
-                <div class="hero-block">
-                    <strong>${wb.hero.name}</strong> (${wb.hero.rank}) - ${heroCost}pts
-                    <div class="options-row">${renderOptions(wb, wb.hero, true)}</div>
-                </div>
-                <div class="warband-stats">${wb.units.length} / ${RANKS[wb.hero.rank] || 0} Warriors</div>
-            </div>
-            <div class="warband-units">
-                ${Object.values(groups).map(group => {
-                    let unitTotal = group.data.points;
-                    group.data.selectedOptions.forEach(oid => {
-                        unitTotal += group.data.options.find(o => o.id === oid).points;
-                    });
-                    grandTotal += (unitTotal * group.count);
+        const warriorsHtml = Object.values(groups).map(group => {
+            let unitCost = group.data.points;
+            group.data.selectedOptions.forEach(oid => {
+                unitCost += group.data.options.find(o => o.id === oid).points;
+            });
+            grandTotal += (unitCost * group.count);
 
-                    return `
-                        <div class="unit-stack">
-                            <div class="stack-info">
-                                <span>${group.count}x ${group.data.name}</span>
-                                <span>${unitTotal * group.count} pts</span>
-                            </div>
-                            <div class="options-row">${renderOptions(wb, group.data, false)}</div>
-                            <div class="stack-controls">
-                                <button onclick="changeCount(${wb.id}, '${group.data.id}', '${group.data.selectedOptions.join(',')}', -1)">-</button>
-                                <button onclick="changeCount(${wb.id}, '${group.data.id}', '${group.data.selectedOptions.join(',')}', 1)">+</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
+            return `
+                <div class="unit-stack">
+                    <div class="stack-header">
+                        <span><strong>${group.count}x</strong> ${group.data.name}</span>
+                        <span>${unitCost * group.count} pts</span>
+                    </div>
+                    <div class="options-row">
+                        ${(group.data.options || []).map(opt => `
+                            <label class="opt-label">
+                                <input type="checkbox" ${group.data.selectedOptions.includes(opt.id) ? 'checked' : ''} 
+                                    onchange="modifyStackGear(${wb.id}, '${group.data.id}', '${group.data.selectedOptions.join(',')}', '${opt.id}')">
+                                ${opt.name}
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div class="stack-controls">
+                        <button onclick="adjustCount(${wb.id}, '${group.data.id}', '${group.data.selectedOptions.join(',')}', -1)">-</button>
+                        <button onclick="adjustCount(${wb.id}, '${group.data.id}', '${group.data.selectedOptions.join(',')}', 1)">+</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        wbDiv.innerHTML = `
+            <div class="warband-header">
+                <h3>Warband ${wbIdx + 1}: ${wb.hero.name}</h3>
+                <button class="btn-text-red" onclick="removeWarband(${wb.id})">Delete</button>
             </div>
-            <button class="btn-add-mini" onclick="showWarriorPicker(${wb.id})">+ Add Warrior</button>
+            <div class="hero-options">
+                ${(wb.hero.options || []).map(opt => `
+                    <label class="opt-label">
+                        <input type="checkbox" ${wb.hero.selectedOptions.includes(opt.id) ? 'checked' : ''} 
+                            onchange="toggleWargear(${wb.id}, ${wb.hero.instanceId}, '${opt.id}', true)">
+                        ${opt.name} (+${opt.points})
+                    </label>
+                `).join('')}
+            </div>
+            <div class="warband-summary">${wb.units.length} / ${RANKS[wb.hero.rank]} Warriors</div>
+            <div class="warband-list">${warriorsHtml}</div>
         `;
-        selectedContainer.appendChild(wbEl);
+        selectedContainer.appendChild(wbDiv);
     });
 
     pointsDisplay.innerText = grandTotal;
 }
 
-function renderOptions(wb, unit, isHero) {
-    return (unit.options || []).map(opt => `
-        <label class="opt-label">
-            <input type="checkbox" ${unit.selectedOptions.includes(opt.id) ? 'checked' : ''} 
-                onchange="toggleWargear(${wb.id}, ${unit.instanceId || 0}, '${opt.id}', ${isHero})">
-            ${opt.name}
-        </label>
-    `).join('');
-}
+// --- Helper Functions for Grouped Units ---
 
-// Logic for stacking +/- buttons
-window.changeCount = (wbId, unitId, optionsStr, delta) => {
+window.adjustCount = (wbId, unitId, optionsStr, delta) => {
     const wb = warbands.find(w => w.id === wbId);
     const options = optionsStr ? optionsStr.split(',') : [];
     
     if (delta > 0) {
         addUnitToWarband(wbId, unitId);
-        // Apply the same options to the newly added unit
-        const newUnit = wb.units[wb.units.length - 1];
-        newUnit.selectedOptions = [...options];
+        wb.units[wb.units.length - 1].selectedOptions = [...options];
     } else {
         const idx = wb.units.findIndex(u => u.id === unitId && u.selectedOptions.sort().join(',') === options.sort().join(','));
         if (idx > -1) wb.units.splice(idx, 1);
@@ -169,30 +258,19 @@ window.changeCount = (wbId, unitId, optionsStr, delta) => {
     updateArmyUI();
 };
 
-window.showWarriorPicker = (wbId) => {
-    // For now, we simple-add a default warrior for the demo
-    // You can replace this with a modal window
-    const firstWarrior = currentArmyData.warriors[0].id;
-    addUnitToWarband(wbId, firstWarrior);
+window.modifyStackGear = (wbId, unitId, currentOptionsStr, toggleOptId) => {
+    const wb = warbands.find(w => w.id === wbId);
+    const currentOpts = currentOptionsStr ? currentOptionsStr.split(',') : [];
+    
+    // Find one unit in the stack to modify
+    const unit = wb.units.find(u => u.id === unitId && u.selectedOptions.sort().join(',') === currentOpts.sort().join(','));
+    
+    if (unit) {
+        const idx = unit.selectedOptions.indexOf(toggleOptId);
+        if (idx > -1) unit.selectedOptions.splice(idx, 1);
+        else unit.selectedOptions.push(toggleOptId);
+    }
+    updateArmyUI();
 };
-
-// Global Add Hero (Starts a new warband)
-window.addUnitToArmy = (id, type) => {
-    if (type === 'hero') addWarband(id);
-    else alert("Please add a Hero first to start a warband!");
-};
-
-function renderCatalog() {
-    heroGrid.innerHTML = currentArmyData.heroes.map(hero => `
-        <div class="unit-card">
-            <img src="${hero.image}">
-            <div class="unit-card-body">
-                <h4>${hero.name}</h4>
-                <small>${hero.rank}</small>
-                <button class="btn-add" onclick="addWarband('${hero.id}')">Start Warband</button>
-            </div>
-        </div>
-    `).join('');
-}
 
 initApp();
