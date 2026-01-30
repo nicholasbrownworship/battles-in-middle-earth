@@ -1,0 +1,40 @@
+{
+  "armyName": "The Defenders of Helm's Deep",
+  "armyBonus": "Infantry models gain +1 to their Fight value when defending a barrier.",
+  "heroes": [
+    {
+      "id": "theoden_hd",
+      "name": "Théoden, King of Rohan",
+      "points": 75,
+      "image": "https://www.warhammer.com/app/resources/catalog/product/920x950/99121464041_TheodenKingofRohan01.jpg",
+      "options": [
+        {"id": "horse", "name": "Armoured Horse", "points": 15},
+        {"id": "heavy_armour", "name": "Heavy Armour", "points": 5},
+        {"id": "shield", "name": "Shield", "points": 5}
+      ]
+    },
+    {
+      "id": "legolas_hd",
+      "name": "Legolas Greenleaf",
+      "points": 100,
+      "image": "https://www.warhammer.com/app/resources/catalog/product/920x950/99811463013_LegolasPrinceofMirkwood01.jpg",
+      "options": [
+        {"id": "elven_cloak", "name": "Elven Cloak", "points": 5},
+        {"id": "armor", "name": "Armor", "points": 5}
+      ]
+    }
+  ],
+  "warriors": [
+    {
+      "id": "rohan_warrior",
+      "name": "Warrior of Rohan",
+      "points": 6,
+      "image": "https://www.warhammer.com/app/resources/catalog/product/920x950/99121464003_WarriorsofRohanNEW01.jpg",
+      "options": [
+        {"id": "shield", "name": "Shield", "points": 1},
+        {"id": "throwing_spear", "name": "Throwing Spears", "points": 2},
+        {"id": "bow", "name": "Bow", "points": 1}
+      ]
+    }
+  ]
+}
