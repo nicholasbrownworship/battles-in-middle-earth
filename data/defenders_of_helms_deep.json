@@ -5,6 +5,7 @@
     {
       "id": "theoden_hd",
       "name": "Théoden, King of Rohan",
+      "rank": "Legend",
       "points": 75,
       "image": "https://www.warhammer.com/app/resources/catalog/product/920x950/99121464041_TheodenKingofRohan01.jpg",
       "options": [
@@ -16,6 +17,7 @@
     {
       "id": "legolas_hd",
       "name": "Legolas Greenleaf",
+      "rank": "Fortitude",
       "points": 100,
       "image": "https://www.warhammer.com/app/resources/catalog/product/920x950/99811463013_LegolasPrinceofMirkwood01.jpg",
       "options": [
