@@ -1,246 +1,165 @@
-/* --- Root Variables & Theme --- */
 :root {
-    --bg-dark: #020617;
-    --bg-card: #1e293b;
-    --bg-stack: #0f172a;
-    --gold: #eab308;
-    --gold-hover: #fde047;
-    --gold-dim: #a16207;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --danger: #ef4444;
-    --success: #22c55e;
-    --border: #334155;
+    --bg-dark: #111827;
+    --bg-card: #1f2937;
+    --accent: #d97706; /* Warmer gold */
+    --accent-light: #fbbf24;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --danger: #dc2626;
+    --border: #374151;
 }
 
 body {
     margin: 0;
     font-family: 'Quicksand', sans-serif;
     background-color: var(--bg-dark);
-    color: var(--text-main);
-    line-height: 1.5;
+    color: var(--text-primary);
 }
 
-/* --- Layout Structure --- */
+/* Header & Global Stats */
 .main-header {
-    background: #0f172a;
-    border-bottom: 3px solid var(--gold-dim);
+    background: #000;
     padding: 1rem 2rem;
+    border-bottom: 2px solid var(--accent);
     position: sticky;
     top: 0;
-    z-index: 1000;
+    z-index: 100;
 }
 
 .header-content {
-    max-width: 1600px;
+    max-width: 1400px;
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 20px;
 }
 
-.builder-container {
-    display: grid;
-    grid-template-columns: 350px 1fr;
-    gap: 2rem;
-    max-width: 1600px;
-    margin: 1.5rem auto;
-    padding: 0 1rem;
+h1 { font-family: 'Cinzel', serif; margin: 0; color: var(--accent); font-size: 1.5rem; }
+
+#army-selector {
+    background: var(--bg-card);
+    color: white;
+    border: 1px solid var(--border);
+    padding: 0.4rem;
+    border-radius: 4px;
+    margin-top: 5px;
 }
 
-/* --- Stats Bar (Bow Limit & Points) --- */
 .stats-bar {
     display: flex;
-    gap: 1.5rem;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 0.5rem 1.5rem;
-    border-radius: 6px;
-    border: 1px solid var(--border);
+    gap: 2rem;
 }
 
 .stat-item {
-    font-size: 1.1rem;
+    text-align: center;
     font-weight: 700;
+    font-size: 1.2rem;
 }
 
 .stat-label {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    text-transform: uppercase;
     display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
 }
 
-/* --- Catalog (Left Side) --- */
-.catalog {
-    height: calc(100vh - 120px);
-    overflow-y: auto;
-    padding-right: 10px;
+/* Layout */
+.builder-container {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1rem;
 }
 
-/* Custom Scrollbar for Catalog */
-.catalog::-webkit-scrollbar { width: 6px; }
-.catalog::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+/* Unit Grid (Catalog) */
+.unit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
 
 .unit-card {
     background: var(--bg-card);
-    border: 1px solid var(--border);
     border-radius: 8px;
-    margin-bottom: 1rem;
+    border: 1px solid var(--border);
     overflow: hidden;
+    transition: border-color 0.2s;
 }
 
-.image-container {
-    position: relative;
-    height: 120px;
-}
+.unit-card:hover { border-color: var(--accent); }
 
-.image-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+.image-container { height: 120px; position: relative; }
+.image-container img { width: 100%; height: 100%; object-fit: cover; }
 
 .points-badge {
     position: absolute;
-    bottom: 5px;
+    top: 5px;
     right: 5px;
-    background: rgba(0,0,0,0.8);
-    color: var(--gold);
+    background: rgba(0,0,0,0.7);
     padding: 2px 6px;
-    font-weight: bold;
     border-radius: 4px;
+    font-size: 0.8rem;
+    color: var(--accent-light);
 }
 
-.unit-card-body { padding: 0.75rem; }
-.unit-card-body h3 { margin: 0; font-size: 1rem; font-family: 'Cinzel', serif; }
+.unit-card-body { padding: 0.8rem; text-align: center; }
+.unit-card-body h3 { margin: 0 0 0.5rem 0; font-size: 0.95rem; height: 2.4rem; overflow: hidden; }
 
-.warband-selector-list {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.btn-mini-add {
-    background: var(--border);
-    color: var(--text-main);
-    border: none;
-    padding: 4px;
-    font-size: 0.75rem;
-    cursor: pointer;
-    border-radius: 4px;
-}
-
-.btn-mini-add:hover { background: var(--gold-dim); }
-
-/* --- Warband List (Right Side) --- */
+/* Warband Styling */
 .warband-container {
     background: var(--bg-card);
-    border: 1px solid var(--gold-dim);
-    border-radius: 10px;
-    padding: 1.25rem;
+    border-left: 4px solid var(--accent);
+    padding: 1rem;
     margin-bottom: 1.5rem;
+    border-radius: 4px;
 }
 
 .warband-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
     border-bottom: 1px solid var(--border);
-    padding-bottom: 10px;
-    margin-bottom: 10px;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.8rem;
 }
 
-.warband-header h3 { margin: 0; font-family: 'Cinzel', serif; color: var(--gold); }
-
-.hero-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 10px;
-}
-
-.warband-summary {
-    font-size: 0.85rem;
-    font-weight: bold;
-    color: var(--text-muted);
-    margin-bottom: 15px;
-}
-
-/* --- Grouped Unit Stacks --- */
 .unit-stack {
-    background: var(--bg-stack);
-    border: 1px solid var(--border);
-    padding: 10px;
-    border-radius: 6px;
-    margin-bottom: 8px;
+    background: rgba(0,0,0,0.2);
+    padding: 0.6rem;
+    margin-top: 0.5rem;
+    border-radius: 4px;
 }
 
-.stack-header {
-    display: flex;
-    justify-content: space-between;
+.stack-header { display: flex; justify-content: space-between; font-size: 0.9rem; }
+
+.options-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 5px 0; }
+
+.opt-label { font-size: 0.75rem; color: var(--text-secondary); cursor: pointer; }
+
+/* Buttons */
+.btn-add, .btn-mini-add {
+    background: var(--accent);
+    color: #000;
     font-weight: 700;
-}
-
-.options-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin: 8px 0;
-}
-
-.opt-label {
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 4px;
     cursor: pointer;
+    width: 100%;
 }
 
-.stack-controls {
-    display: flex;
-    gap: 10px;
-    margin-top: 8px;
-    border-top: 1px solid var(--border);
-    padding-top: 8px;
-}
+.btn-mini-add { margin-top: 4px; padding: 2px; font-size: 0.7rem; background: var(--border); color: white; }
 
-.stack-controls button {
-    background: var(--gold-dim);
+.btn-danger {
+    width: 100%;
+    background: var(--danger);
     color: white;
     border: none;
-    width: 24px;
-    height: 24px;
+    padding: 0.8rem;
+    font-weight: 700;
     border-radius: 4px;
     cursor: pointer;
-}
-
-/* --- General Buttons --- */
-.btn-add {
-    width: 100%;
-    background: var(--gold);
-    color: black;
-    font-weight: 800;
-    border: none;
-    padding: 8px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.btn-text-red {
-    background: none;
-    border: none;
-    color: var(--danger);
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.rank-badge {
-    display: inline-block;
-    font-size: 0.7rem;
-    background: #475569;
-    padding: 2px 5px;
-    border-radius: 3px;
-    margin-bottom: 8px;
+    margin-top: 1rem;
 }
