@@ -1,6 +1,7 @@
 /**
  * MESBG Army Builder - Full Integrated Logic
- * Features: Warbands, Smart Stacking, Bow Limits, Army Rules, GitHub Compatibility
+ * Features: Warbands, Smart Stacking, Bow Limits, Army Rules, 
+ * GitHub Compatibility, and Dynamic Image Fallbacks.
  */
 
 // --- 1. Global State ---
@@ -30,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initApp() {
     try {
-        // Cache-busting (?t=) ensures GitHub Pages loads the newest JSON version
         const response = await fetch(`data/armies.json?t=${Date.now()}`);
         if (!response.ok) throw new Error("Manifest not found");
         const armyList = await response.json();
@@ -58,7 +58,6 @@ armySelector.addEventListener('change', async (e) => {
         if (!response.ok) throw new Error(`Could not load ${fileName}`);
         currentArmyData = await response.json();
         
-        // Reset state for new army
         warbands = [];
         updateArmyUI();
         renderCatalog();
@@ -77,7 +76,8 @@ function renderCatalog() {
     heroGrid.innerHTML = currentArmyData.heroes.map(hero => `
         <div class="unit-card">
             <div class="image-container">
-                <img src="${hero.image}" alt="${hero.name}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                <img src="${hero.image}" alt="${hero.name}" 
+                     onerror="this.onerror=null; this.src='https://placehold.co/150x150/1a202c/ffd700?text=${hero.name.replace(/ /g, '+')}';">
                 <div class="points-badge">${hero.points} pts</div>
             </div>
             <div class="unit-card-body">
@@ -104,7 +104,8 @@ function renderWarriorCatalog() {
         return `
             <div class="unit-card">
                 <div class="image-container">
-                    <img src="${warrior.image}" alt="${warrior.name}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                    <img src="${warrior.image}" alt="${warrior.name}" 
+                         onerror="this.onerror=null; this.src='https://placehold.co/150x150/1a202c/ffd700?text=${warrior.name.replace(/ /g, '+')}';">
                     <div class="points-badge">${warrior.points} pts</div>
                 </div>
                 <div class="unit-card-body">
@@ -171,7 +172,7 @@ window.removeWarband = (wbId) => {
     renderWarriorCatalog();
 };
 
-// --- 7. UI Update with Army Rules & Stacking ---
+// --- 7. UI Update (Rules, Stacking, Bows) ---
 
 function updateArmyUI() {
     let grandTotal = 0;
@@ -180,13 +181,12 @@ function updateArmyUI() {
     
     selectedContainer.innerHTML = '';
 
-    // --- Render Army Rule Section ---
+    // Render Army Rule Box
     if (currentArmyData) {
         const ruleDiv = document.createElement('div');
         ruleDiv.className = 'army-rule-box';
         
         const displayTitle = currentArmyData.armyName || currentArmyData.name || "Army List";
-        // Convert \n in JSON to <br> for HTML
         const displayRule = currentArmyData.armyRule 
             ? currentArmyData.armyRule.replace(/\n/g, '<br>') 
             : "No specific army rules found.";
@@ -202,7 +202,7 @@ function updateArmyUI() {
         const wbDiv = document.createElement('div');
         wbDiv.className = 'warband-container';
 
-        // Process Hero
+        // Hero Logic
         totalModels++;
         let heroCost = wb.hero.points;
         wb.hero.selectedOptions.forEach(oid => {
@@ -212,7 +212,7 @@ function updateArmyUI() {
         if (hasBow(wb.hero)) totalBows++;
         grandTotal += heroCost;
 
-        // Smart Grouping for Warriors
+        // Grouping/Stacking Logic
         const groups = {};
         wb.units.forEach(u => {
             const configKey = u.id + "|" + [...u.selectedOptions].sort().join(',');
