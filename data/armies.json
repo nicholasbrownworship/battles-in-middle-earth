@@ -1,0 +1,5 @@
+[
+  { "name": "The Defenders of Helm's Deep", "file": "defenders_of_helms_deep.json" },
+  { "name": "Atop the Walls", "file": "minas_tirith.json" },
+  { "name": "The Rangers of Ithilien", "file": "ithilien.json" }
+]
