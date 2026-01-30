@@ -1,11 +1,16 @@
+/* --- Root Variables & Theme --- */
 :root {
     --bg-dark: #020617;
     --bg-card: #1e293b;
+    --bg-stack: #0f172a;
     --gold: #eab308;
+    --gold-hover: #fde047;
     --gold-dim: #a16207;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
-    --danger: #991b1b;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --border: #334155;
 }
 
 body {
@@ -16,172 +21,226 @@ body {
     line-height: 1.5;
 }
 
-/* Header */
+/* --- Layout Structure --- */
 .main-header {
     background: #0f172a;
     border-bottom: 3px solid var(--gold-dim);
     padding: 1rem 2rem;
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
 }
 
 .header-content {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 20px;
 }
 
-h1 { font-family: 'Cinzel', serif; color: var(--gold); margin: 0; font-size: 1.5rem; }
-
-#army-selector {
-    background: var(--bg-card);
-    color: white;
-    border: 1px solid var(--gold-dim);
-    padding: 0.5rem;
-    border-radius: 4px;
-    margin-top: 0.5rem;
-}
-
-/* Layout */
 .builder-container {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: 350px 1fr;
     gap: 2rem;
-    max-width: 1400px;
-    margin: 2rem auto;
+    max-width: 1600px;
+    margin: 1.5rem auto;
     padding: 0 1rem;
 }
 
-/* Catalog */
-.section-title {
-    font-family: 'Cinzel', serif;
-    color: var(--gold);
-    border-bottom: 1px solid #334155;
-    padding-bottom: 0.5rem;
-    margin-top: 0;
+/* --- Stats Bar (Bow Limit & Points) --- */
+.stats-bar {
+    display: flex;
+    gap: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem 1.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
 }
 
-.unit-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
+.stat-item {
+    font-size: 1.1rem;
+    font-weight: 700;
 }
+
+.stat-label {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    display: block;
+}
+
+/* --- Catalog (Left Side) --- */
+.catalog {
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+/* Custom Scrollbar for Catalog */
+.catalog::-webkit-scrollbar { width: 6px; }
+.catalog::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
 .unit-card {
     background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 8px;
+    margin-bottom: 1rem;
     overflow: hidden;
-    border: 1px solid #334155;
-    transition: transform 0.2s ease;
 }
 
-.unit-card:hover { transform: translateY(-4px); border-color: var(--gold-dim); }
+.image-container {
+    position: relative;
+    height: 120px;
+}
 
-.image-container { position: relative; height: 160px; }
-.image-container img { width: 100%; height: 100%; object-fit: cover; }
+.image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
 .points-badge {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    bottom: 5px;
+    right: 5px;
     background: rgba(0,0,0,0.8);
     color: var(--gold);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-.unit-card-body { padding: 1rem; text-align: center; }
-.unit-card-body h3 { margin: 0 0 1rem 0; font-size: 1.1rem; min-height: 2.5rem; }
-
-.btn-add {
-    background: var(--gold);
-    color: black;
-    border: none;
-    width: 100%;
-    padding: 0.6rem;
+    padding: 2px 6px;
     font-weight: bold;
     border-radius: 4px;
-    cursor: pointer;
 }
 
-/* Sidebar List */
-.army-list-sidebar {
-    background: #0f172a;
-    padding: 1.5rem;
-    border-radius: 8px;
-    height: fit-content;
-    position: sticky;
-    top: 100px;
-    border: 1px solid #334155;
-}
+.unit-card-body { padding: 0.75rem; }
+.unit-card-body h3 { margin: 0; font-size: 1rem; font-family: 'Cinzel', serif; }
 
-.selected-unit-item {
-    background: var(--bg-card);
-    padding: 1rem;
-    border-radius: 6px;
-    margin-bottom: 1rem;
-    border-left: 4px solid var(--gold);
-}
-
-.selected-unit-header {
-    display: flex;
-    justify-content: space-between;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-}
-
-.unit-cost { color: var(--gold); }
-
-.options-container {
+.warband-selector-list {
+    margin-top: 10px;
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
-    margin-bottom: 1rem;
+    gap: 4px;
 }
 
-.wargear-checkbox {
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    color: var(--text-muted);
-}
-
-.wargear-checkbox input { accent-color: var(--gold); }
-
-.remove-btn {
-    background: transparent;
-    border: 1px solid #450a0a;
-    color: #f87171;
-    width: 100%;
-    padding: 4px;
-    font-size: 0.8rem;
-    cursor: pointer;
-}
-
-.remove-btn:hover { background: #450a0a; }
-
-.btn-danger {
-    width: 100%;
-    background: var(--danger);
+.btn-mini-add {
+    background: var(--border);
+    color: var(--text-main);
     border: none;
-    padding: 0.8rem;
-    color: white;
-    font-weight: bold;
+    padding: 4px;
+    font-size: 0.75rem;
     cursor: pointer;
     border-radius: 4px;
-    margin-top: 1rem;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-    .builder-container { grid-template-columns: 1fr; }
-    .army-list-sidebar { position: relative; top: 0; }
+.btn-mini-add:hover { background: var(--gold-dim); }
+
+/* --- Warband List (Right Side) --- */
+.warband-container {
+    background: var(--bg-card);
+    border: 1px solid var(--gold-dim);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.warband-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.warband-header h3 { margin: 0; font-family: 'Cinzel', serif; color: var(--gold); }
+
+.hero-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.warband-summary {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: var(--text-muted);
+    margin-bottom: 15px;
+}
+
+/* --- Grouped Unit Stacks --- */
+.unit-stack {
+    background: var(--bg-stack);
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.stack-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+}
+
+.options-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 8px 0;
+}
+
+.opt-label {
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.stack-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+}
+
+.stack-controls button {
+    background: var(--gold-dim);
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* --- General Buttons --- */
+.btn-add {
+    width: 100%;
+    background: var(--gold);
+    color: black;
+    font-weight: 800;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-text-red {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.rank-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    background: #475569;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-bottom: 8px;
 }
