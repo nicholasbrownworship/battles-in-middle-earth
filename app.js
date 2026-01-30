@@ -1,12 +1,13 @@
 /**
- * MESBG Army Builder - Full Warband Logic
+ * MESBG Army Builder - Full Integrated Logic
+ * Features: Warbands, Smart Stacking, Bow Limits, GitHub Pages Compatibility
  */
 
-// --- State ---
+// --- 1. Global State ---
 let currentArmyData = null;
 let warbands = []; 
 
-// --- Constants ---
+// --- 2. MESBG Constants ---
 const RANKS = {
     "Legend": 18,
     "Valor": 15,
@@ -15,18 +16,23 @@ const RANKS = {
     "Independent": 0
 };
 
-// --- DOM Elements ---
+// --- 3. DOM Elements ---
 const armySelector = document.getElementById('army-selector');
 const heroGrid = document.getElementById('hero-grid');
 const warriorGrid = document.getElementById('warrior-grid');
 const selectedContainer = document.getElementById('selected-units');
-const pointsDisplay = document.getElementById('total-points');
 
-// --- Initialization ---
+// --- 4. Initialization & Data Fetching ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+});
 
 async function initApp() {
     try {
-        const response = await fetch('./data/armies.json');
+        // Cache-busting (?t=) ensures GitHub Pages loads the newest JSON version
+        const response = await fetch(`data/armies.json?t=${Date.now()}`);
+        if (!response.ok) throw new Error("Manifest not found");
         const armyList = await response.json();
         
         armySelector.innerHTML = '<option value="">-- Choose an Army --</option>';
@@ -36,19 +42,20 @@ async function initApp() {
             opt.textContent = army.name;
             armySelector.appendChild(opt);
         });
+        console.log("App Initialized: Armies Loaded");
     } catch (e) {
-        console.error("Could not load manifest. Ensure data/armies.json exists.", e);
+        console.error("Initialization error:", e);
+        if(armySelector) armySelector.innerHTML = '<option>Error loading armies.json</option>';
     }
 }
-
-// --- Loading Army Data ---
 
 armySelector.addEventListener('change', async (e) => {
     const fileName = e.target.value;
     if (!fileName) return;
 
     try {
-        const response = await fetch(`./data/${fileName}`);
+        const response = await fetch(`data/${fileName}?t=${Date.now()}`);
+        if (!response.ok) throw new Error(`Could not load ${fileName}`);
         currentArmyData = await response.json();
         
         // Reset state for new army
@@ -56,14 +63,17 @@ armySelector.addEventListener('change', async (e) => {
         updateArmyUI();
         renderCatalog();
     } catch (e) {
-        console.error("Error loading army file:", e);
+        console.error("Load Error:", e);
+        alert(`Failed to load ${fileName}. Check file case-sensitivity on GitHub!`);
     }
 });
 
-// --- Catalog Rendering ---
+// --- 5. Catalog Rendering ---
 
 function renderCatalog() {
-    // Render Heroes
+    if (!currentArmyData) return;
+
+    // Render Hero Cards
     heroGrid.innerHTML = currentArmyData.heroes.map(hero => `
         <div class="unit-card">
             <div class="image-container">
@@ -78,13 +88,14 @@ function renderCatalog() {
         </div>
     `).join('');
 
-    // Render Warriors
     renderWarriorCatalog();
 }
 
 function renderWarriorCatalog() {
+    if (!currentArmyData) return;
+
     warriorGrid.innerHTML = currentArmyData.warriors.map(warrior => {
-        // Create a button for each active warband
+        // Create a button for each active warband so user can choose where warrior goes
         const warbandButtons = warbands.map((wb, index) => `
             <button class="btn-mini-add" onclick="addUnitToWarband(${wb.id}, '${warrior.id}')">
                 Add to Warband ${index + 1}
@@ -108,7 +119,7 @@ function renderWarriorCatalog() {
     }).join('');
 }
 
-// --- Core Logic ---
+// --- 6. Core Logic Functions ---
 
 window.createNewWarband = (heroId) => {
     const template = currentArmyData.heroes.find(h => h.id === heroId);
@@ -123,16 +134,16 @@ window.createNewWarband = (heroId) => {
     };
     warbands.push(newWarband);
     updateArmyUI();
-    renderWarriorCatalog(); // Refresh buttons on the left
+    renderWarriorCatalog(); // Refresh catalog to show new "Add to Warband" button
 };
 
 window.addUnitToWarband = (warbandId, unitId) => {
     const wb = warbands.find(w => w.id === warbandId);
     const template = currentArmyData.warriors.find(u => u.id === unitId);
     
-    const max = RANKS[wb.hero.rank] || 0;
-    if (wb.units.length >= max) {
-        alert(`${wb.hero.name} cannot lead more than ${max} warriors.`);
+    const maxCapacity = RANKS[wb.hero.rank] || 0;
+    if (wb.units.length >= maxCapacity) {
+        alert(`${wb.hero.name} cannot lead more than ${maxCapacity} warriors.`);
         return;
     }
 
@@ -161,27 +172,32 @@ window.removeWarband = (wbId) => {
     renderWarriorCatalog();
 };
 
-// --- UI Refresh & Grouping ---
+// --- 7. Smart Stacking & UI Update ---
 
 function updateArmyUI() {
     let grandTotal = 0;
+    let totalModels = 0;
+    let totalBows = 0;
+    
     selectedContainer.innerHTML = '';
 
     warbands.forEach((wb, wbIdx) => {
         const wbDiv = document.createElement('div');
         wbDiv.className = 'warband-container';
 
-        // Hero Calculation
+        // Process Hero
+        totalModels++;
         let heroCost = wb.hero.points;
         wb.hero.selectedOptions.forEach(oid => {
-            heroCost += wb.hero.options.find(o => o.id === oid).points;
+            const opt = wb.hero.options.find(o => o.id === oid);
+            heroCost += opt.points;
         });
+        if (hasBow(wb.hero)) totalBows++;
         grandTotal += heroCost;
 
-        // Smart Grouping for Warriors
+        // Smart Grouping for Warriors (Stacking identical units)
         const groups = {};
         wb.units.forEach(u => {
-            // Sort options so that [shield, bow] is same as [bow, shield]
             const configKey = u.id + "|" + [...u.selectedOptions].sort().join(',');
             if (!groups[configKey]) {
                 groups[configKey] = { data: u, count: 0 };
@@ -190,17 +206,20 @@ function updateArmyUI() {
         });
 
         const warriorsHtml = Object.values(groups).map(group => {
-            let unitCost = group.data.points;
+            totalModels += group.count;
+            let unitCostPerModel = group.data.points;
             group.data.selectedOptions.forEach(oid => {
-                unitCost += group.data.options.find(o => o.id === oid).points;
+                unitCostPerModel += group.data.options.find(o => o.id === oid).points;
             });
-            grandTotal += (unitCost * group.count);
+            
+            if (hasBow(group.data)) totalBows += group.count;
+            grandTotal += (unitCostPerModel * group.count);
 
             return `
                 <div class="unit-stack">
                     <div class="stack-header">
                         <span><strong>${group.count}x</strong> ${group.data.name}</span>
-                        <span>${unitCost * group.count} pts</span>
+                        <span>${unitCostPerModel * group.count} pts</span>
                     </div>
                     <div class="options-row">
                         ${(group.data.options || []).map(opt => `
@@ -239,76 +258,48 @@ function updateArmyUI() {
         selectedContainer.appendChild(wbDiv);
     });
 
-    pointsDisplay.innerText = grandTotal;
+    renderStatsBar(grandTotal, totalModels, totalBows);
 }
 
-/**
- * MESBG Bow Limit Logic
- */
-
-function calculateBowStats() {
-    let totalModels = 0;
-    let totalBows = 0;
-
-    warbands.forEach(wb => {
-        // Count Hero (Heroes usually don't count toward the limit, 
-        // but they DO count as a model in the army total)
-        totalModels++;
-        if (hasBow(wb.hero)) totalBows++;
-
-        // Count Warriors
-        wb.units.forEach(unit => {
-            totalModels++;
-            if (hasBow(unit)) totalBows++;
-        });
-    });
-
-    const bowLimit = Math.ceil(totalModels / 3);
-    return { totalModels, totalBows, bowLimit };
+function renderStatsBar(points, models, bows) {
+    const bowLimit = Math.ceil(models / 3);
+    const isOverLimit = bows > bowLimit;
+    const statsBar = document.getElementById('army-stats-bar');
+    
+    if (statsBar) {
+        statsBar.innerHTML = `
+            <div class="stat-item">
+                <span class="stat-label">Points</span>
+                <span class="stat-value">${points}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Models</span>
+                <span class="stat-value">${models}</span>
+            </div>
+            <div class="stat-item" style="color: ${isOverLimit ? '#ef4444' : '#f59e0b'}">
+                <span class="stat-label">Bows</span>
+                <span class="stat-value">${bows} / ${bowLimit}</span>
+            </div>
+        `;
+    }
 }
 
-// Helper to check if a unit has a bow (either innate or selected)
+// --- 8. Helper Functions ---
+
 function hasBow(unit) {
-    // 1. Check if "Bow" is in the selected options IDs
-    const hasSelectedBow = unit.selectedOptions.some(optId => 
+    const hasSelectedBow = unit.selectedOptions && unit.selectedOptions.some(optId => 
         optId.toLowerCase().includes('bow') || optId.toLowerCase().includes('great_bow')
     );
-
-    // 2. Check if the unit has a "natural" bow (defined in your JSON)
     const hasInnateBow = unit.innateWargear && unit.innateWargear.includes('bow');
-
     return hasSelectedBow || hasInnateBow;
 }
-
-// Updated UI Update Function (Partial)
-function updateArmyUI() {
-    // ... [existing grandTotal logic] ...
-
-    const stats = calculateBowStats();
-    
-    // Create a warning color if over the limit
-    const bowColor = stats.totalBows > stats.bowLimit ? '#ef4444' : '#eab308';
-
-    // Inject this into your header or a specific stats bar
-    document.getElementById('army-stats-bar').innerHTML = `
-        <div class="stat-item">Models: <strong>${stats.totalModels}</strong></div>
-        <div class="stat-item" style="color: ${bowColor}">
-            Bows: <strong>${stats.totalBows} / ${stats.bowLimit}</strong>
-            ${stats.totalBows > stats.bowLimit ? ' <small>(OVER LIMIT)</small>' : ''}
-        </div>
-    `;
-
-    // ... [rest of the UI rendering] ...
-}
-
-// --- Helper Functions for Grouped Units ---
 
 window.adjustCount = (wbId, unitId, optionsStr, delta) => {
     const wb = warbands.find(w => w.id === wbId);
     const options = optionsStr ? optionsStr.split(',') : [];
-    
     if (delta > 0) {
         addUnitToWarband(wbId, unitId);
+        // Ensure new unit gets same gear as the stack
         wb.units[wb.units.length - 1].selectedOptions = [...options];
     } else {
         const idx = wb.units.findIndex(u => u.id === unitId && u.selectedOptions.sort().join(',') === options.sort().join(','));
@@ -321,9 +312,9 @@ window.modifyStackGear = (wbId, unitId, currentOptionsStr, toggleOptId) => {
     const wb = warbands.find(w => w.id === wbId);
     const currentOpts = currentOptionsStr ? currentOptionsStr.split(',') : [];
     
-    // Find one unit in the stack to modify
+    // Modify one unit from the group. Stacking logic will automatically
+    // separate it in the next UI refresh because its configKey changes.
     const unit = wb.units.find(u => u.id === unitId && u.selectedOptions.sort().join(',') === currentOpts.sort().join(','));
-    
     if (unit) {
         const idx = unit.selectedOptions.indexOf(toggleOptId);
         if (idx > -1) unit.selectedOptions.splice(idx, 1);
@@ -331,5 +322,3 @@ window.modifyStackGear = (wbId, unitId, currentOptionsStr, toggleOptId) => {
     }
     updateArmyUI();
 };
-
-initApp();
