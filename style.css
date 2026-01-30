@@ -1,115 +1,187 @@
 :root {
-    --bg-color: #0f172a;
-    --card-bg: #1e293b;
-    --gold: #ca8a04;
-    --text-light: #f8fafc;
-    --text-dim: #94a3b8;
+    --bg-dark: #020617;
+    --bg-card: #1e293b;
+    --gold: #eab308;
+    --gold-dim: #a16207;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --danger: #991b1b;
 }
 
 body {
     margin: 0;
     font-family: 'Quicksand', sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-light);
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    line-height: 1.5;
 }
 
+/* Header */
 .main-header {
-    border-bottom: 2px solid var(--gold);
-    padding: 1.5rem 2rem;
-    background: #020617;
+    background: #0f172a;
+    border-bottom: 3px solid var(--gold-dim);
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 .header-content {
+    max-width: 1400px;
+    margin: 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
 }
 
-h1 { font-family: 'Cinzel', serif; color: var(--gold); margin: 0; }
+h1 { font-family: 'Cinzel', serif; color: var(--gold); margin: 0; font-size: 1.5rem; }
 
 #army-selector {
-    background: var(--card-bg);
+    background: var(--bg-card);
     color: white;
-    border: 1px solid var(--gold);
-    padding: 5px;
-    margin-top: 10px;
+    border: 1px solid var(--gold-dim);
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-top: 0.5rem;
 }
 
-.points-tracker {
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--gold);
-}
-
+/* Layout */
 .builder-container {
     display: grid;
-    grid-template-columns: 1fr 350px;
+    grid-template-columns: 1fr 380px;
     gap: 2rem;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 2rem auto;
     padding: 0 1rem;
 }
 
+/* Catalog */
 .section-title {
     font-family: 'Cinzel', serif;
-    border-left: 4px solid var(--gold);
-    padding-left: 10px;
-    margin-bottom: 1.5rem;
+    color: var(--gold);
+    border-bottom: 1px solid #334155;
+    padding-bottom: 0.5rem;
+    margin-top: 0;
 }
 
 .unit-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1.5rem;
     margin-bottom: 3rem;
 }
 
-/* Unit Cards */
 .unit-card {
-    background: var(--card-bg);
+    background: var(--bg-card);
     border-radius: 8px;
     overflow: hidden;
-    transition: transform 0.2s;
     border: 1px solid #334155;
+    transition: transform 0.2s ease;
 }
 
-.unit-card:hover { transform: translateY(-5px); }
+.unit-card:hover { transform: translateY(-4px); border-color: var(--gold-dim); }
 
-.unit-card img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
+.image-container { position: relative; height: 160px; }
+.image-container img { width: 100%; height: 100%; object-fit: cover; }
+
+.points-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.8);
+    color: var(--gold);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.9rem;
 }
 
-.unit-card-body { padding: 1rem; }
+.unit-card-body { padding: 1rem; text-align: center; }
+.unit-card-body h3 { margin: 0 0 1rem 0; font-size: 1.1rem; min-height: 2.5rem; }
 
 .btn-add {
-    width: 100%;
     background: var(--gold);
+    color: black;
     border: none;
-    padding: 8px;
+    width: 100%;
+    padding: 0.6rem;
     font-weight: bold;
-    cursor: pointer;
     border-radius: 4px;
+    cursor: pointer;
 }
 
 /* Sidebar List */
+.army-list-sidebar {
+    background: #0f172a;
+    padding: 1.5rem;
+    border-radius: 8px;
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+    border: 1px solid #334155;
+}
+
 .selected-unit-item {
-    background: #334155;
-    padding: 10px;
-    margin-bottom: 10px;
+    background: var(--bg-card);
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--gold);
+}
+
+.selected-unit-header {
     display: flex;
     justify-content: space-between;
-    border-left: 3px solid var(--gold);
+    font-weight: bold;
+    margin-bottom: 0.5rem;
 }
+
+.unit-cost { color: var(--gold); }
+
+.options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.wargear-checkbox {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.wargear-checkbox input { accent-color: var(--gold); }
+
+.remove-btn {
+    background: transparent;
+    border: 1px solid #450a0a;
+    color: #f87171;
+    width: 100%;
+    padding: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.remove-btn:hover { background: #450a0a; }
 
 .btn-danger {
     width: 100%;
-    background: #7f1d1d;
-    color: white;
-    padding: 10px;
+    background: var(--danger);
     border: none;
+    padding: 0.8rem;
+    color: white;
+    font-weight: bold;
     cursor: pointer;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .builder-container { grid-template-columns: 1fr; }
+    .army-list-sidebar { position: relative; top: 0; }
 }
