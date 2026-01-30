@@ -1,104 +1,164 @@
-// State management
+/**
+ * MESBG Army Builder - Logic Engine
+ * Handles dynamic JSON loading, unique unit instances, and wargear point calculation.
+ */
+
+// --- State Management ---
 let currentArmyData = null;
 let mySelectedUnits = [];
 
-// DOM Elements
+// --- DOM Elements ---
 const armySelector = document.getElementById('army-selector');
 const heroGrid = document.getElementById('hero-grid');
 const warriorGrid = document.getElementById('warrior-grid');
 const selectedContainer = document.getElementById('selected-units');
 const pointsDisplay = document.getElementById('total-points');
+const clearBtn = document.getElementById('clear-btn');
 
-// 1. Fetch JSON based on selection
+// --- Initialization ---
+
+/**
+ * Loads the army manifest and populates the dropdown menu automatically.
+ */
+async function initApp() {
+    try {
+        const response = await fetch('./data/armies.json');
+        if (!response.ok) throw new Error('Could not find armies.json manifest');
+        
+        const armyList = await response.json();
+
+        // Clear "Loading" state and populate
+        armySelector.innerHTML = '<option value="">-- Choose an Army List --</option>';
+        armyList.forEach(army => {
+            const option = document.createElement('option');
+            option.value = army.file;
+            option.textContent = army.name;
+            armySelector.appendChild(option);
+        });
+    } catch (err) {
+        console.error("Initialization error:", err);
+        armySelector.innerHTML = '<option value="">Error loading army list</option>';
+    }
+}
+
+// --- Event Listeners ---
+
+// Handle changing the army selection
 armySelector.addEventListener('change', async (e) => {
     const fileName = e.target.value;
     if (!fileName) {
-        clearDisplay();
+        clearCatalog();
         return;
     }
 
     try {
         const response = await fetch(`./data/${fileName}`);
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (!response.ok) throw new Error(`Could not load ${fileName}`);
+        
         currentArmyData = await response.json();
         renderCatalog();
     } catch (err) {
-        console.error("Error loading army JSON:", err);
-        alert("Could not load the army list. Make sure the JSON file exists in the /data folder.");
+        console.error("Fetch error:", err);
+        alert("Error loading the selected army file.");
     }
 });
 
-function clearDisplay() {
+// Clear the entire list
+clearBtn.addEventListener('click', () => {
+    if (mySelectedUnits.length > 0 && confirm("Discard your current army list?")) {
+        mySelectedUnits = [];
+        updateArmyUI();
+    }
+});
+
+// --- Core Functions ---
+
+function clearCatalog() {
     heroGrid.innerHTML = '';
     warriorGrid.innerHTML = '';
 }
 
-// 2. Render Units to the Catalog (Left Side)
+/**
+ * Renders the available units (Heroes and Warriors) with images and "Add" buttons.
+ */
 function renderCatalog() {
-    heroGrid.innerHTML = currentArmyData.heroes.map(hero => createCard(hero, 'hero')).join('');
-    warriorGrid.innerHTML = currentArmyData.warriors.map(warrior => createCard(warrior, 'warrior')).join('');
+    heroGrid.innerHTML = currentArmyData.heroes.map(hero => createUnitCard(hero, 'hero')).join('');
+    warriorGrid.innerHTML = currentArmyData.warriors.map(warrior => createUnitCard(warrior, 'warrior')).join('');
 }
 
-function createCard(unit, type) {
+function createUnitCard(unit, type) {
     return `
         <div class="unit-card">
             <div class="image-container">
-                <img src="${unit.image}" alt="${unit.name}" loading="lazy">
+                <img src="${unit.image}" alt="${unit.name}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
                 <div class="points-badge">${unit.points} pts</div>
             </div>
             <div class="unit-card-body">
                 <h3>${unit.name}</h3>
-                <button class="btn-add" onclick="addUnit('${unit.id}', '${type}')">Add to List</button>
+                <button class="btn-add" onclick="addUnitToArmy('${unit.id}', '${type}')">Add to Warband</button>
             </div>
         </div>
     `;
 }
 
-// 3. Army List Logic
-window.addUnit = (id, type) => {
+/**
+ * Adds a new instance of a unit to the user's current army.
+ */
+window.addUnitToArmy = (id, type) => {
     const source = type === 'hero' ? currentArmyData.heroes : currentArmyData.warriors;
-    const unitTemplate = source.find(u => u.id === id);
-    
-    // Create a unique instance of the unit
+    const template = source.find(u => u.id === id);
+
+    if (!template) return;
+
+    // Create unique instance so checkboxes only affect THIS specific model
     const newInstance = {
-        ...unitTemplate,
-        instanceId: Date.now() + Math.random(), // Unique ID for this specific model
-        selectedOptions: [] // Array to hold IDs of selected wargear
+        ...JSON.parse(JSON.stringify(template)), // Deep copy to prevent template pollution
+        instanceId: Date.now() + Math.random(),
+        selectedOptions: []
     };
-    
+
     mySelectedUnits.push(newInstance);
     updateArmyUI();
 };
 
+/**
+ * Removes a specific instance of a unit from the list.
+ */
 window.removeUnit = (instanceId) => {
     mySelectedUnits = mySelectedUnits.filter(u => u.instanceId !== instanceId);
     updateArmyUI();
 };
 
+/**
+ * Toggles wargear on or off for a specific unit instance.
+ */
 window.toggleOption = (instanceId, optionId) => {
     const unit = mySelectedUnits.find(u => u.instanceId === instanceId);
     if (!unit) return;
 
-    const index = unit.selectedOptions.indexOf(optionId);
-    if (index > -1) {
-        unit.selectedOptions.splice(index, 1);
+    const optIndex = unit.selectedOptions.indexOf(optionId);
+    if (optIndex > -1) {
+        unit.selectedOptions.splice(optIndex, 1);
     } else {
         unit.selectedOptions.push(optionId);
     }
     updateArmyUI();
 };
 
-// 4. Update the Sidebar UI
+/**
+ * Updates the right-hand sidebar and recalculates the total points.
+ */
 function updateArmyUI() {
     let grandTotal = 0;
 
     selectedContainer.innerHTML = mySelectedUnits.map(unit => {
-        // Calculate this specific unit's total cost
-        let unitCost = unit.points;
+        let unitTotal = unit.points;
+        
+        // Calculate points and build HTML for options
         const optionsHtml = (unit.options || []).map(opt => {
             const isChecked = unit.selectedOptions.includes(opt.id);
-            if (isChecked) unitCost += opt.points;
-            
+            if (isChecked) unitTotal += opt.points;
+
             return `
                 <label class="wargear-checkbox">
                     <input type="checkbox" 
@@ -109,13 +169,13 @@ function updateArmyUI() {
             `;
         }).join('');
 
-        grandTotal += unitCost;
+        grandTotal += unitTotal;
 
         return `
             <div class="selected-unit-item">
                 <div class="selected-unit-header">
                     <span class="unit-name">${unit.name}</span>
-                    <span class="unit-cost">${unitCost} pts</span>
+                    <span class="unit-cost">${unitTotal} pts</span>
                 </div>
                 <div class="options-container">
                     ${optionsHtml}
@@ -128,9 +188,5 @@ function updateArmyUI() {
     pointsDisplay.innerText = grandTotal;
 }
 
-document.getElementById('clear-btn').addEventListener('click', () => {
-    if(confirm("Are you sure you want to clear your entire list?")) {
-        mySelectedUnits = [];
-        updateArmyUI();
-    }
-});
+// Start the app
+initApp();
