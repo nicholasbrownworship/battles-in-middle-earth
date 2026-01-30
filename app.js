@@ -242,6 +242,65 @@ function updateArmyUI() {
     pointsDisplay.innerText = grandTotal;
 }
 
+/**
+ * MESBG Bow Limit Logic
+ */
+
+function calculateBowStats() {
+    let totalModels = 0;
+    let totalBows = 0;
+
+    warbands.forEach(wb => {
+        // Count Hero (Heroes usually don't count toward the limit, 
+        // but they DO count as a model in the army total)
+        totalModels++;
+        if (hasBow(wb.hero)) totalBows++;
+
+        // Count Warriors
+        wb.units.forEach(unit => {
+            totalModels++;
+            if (hasBow(unit)) totalBows++;
+        });
+    });
+
+    const bowLimit = Math.ceil(totalModels / 3);
+    return { totalModels, totalBows, bowLimit };
+}
+
+// Helper to check if a unit has a bow (either innate or selected)
+function hasBow(unit) {
+    // 1. Check if "Bow" is in the selected options IDs
+    const hasSelectedBow = unit.selectedOptions.some(optId => 
+        optId.toLowerCase().includes('bow') || optId.toLowerCase().includes('great_bow')
+    );
+
+    // 2. Check if the unit has a "natural" bow (defined in your JSON)
+    const hasInnateBow = unit.innateWargear && unit.innateWargear.includes('bow');
+
+    return hasSelectedBow || hasInnateBow;
+}
+
+// Updated UI Update Function (Partial)
+function updateArmyUI() {
+    // ... [existing grandTotal logic] ...
+
+    const stats = calculateBowStats();
+    
+    // Create a warning color if over the limit
+    const bowColor = stats.totalBows > stats.bowLimit ? '#ef4444' : '#eab308';
+
+    // Inject this into your header or a specific stats bar
+    document.getElementById('army-stats-bar').innerHTML = `
+        <div class="stat-item">Models: <strong>${stats.totalModels}</strong></div>
+        <div class="stat-item" style="color: ${bowColor}">
+            Bows: <strong>${stats.totalBows} / ${stats.bowLimit}</strong>
+            ${stats.totalBows > stats.bowLimit ? ' <small>(OVER LIMIT)</small>' : ''}
+        </div>
+    `;
+
+    // ... [rest of the UI rendering] ...
+}
+
 // --- Helper Functions for Grouped Units ---
 
 window.adjustCount = (wbId, unitId, optionsStr, delta) => {
