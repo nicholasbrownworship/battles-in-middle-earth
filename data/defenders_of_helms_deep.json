@@ -1,6 +1,6 @@
 {
   "armyName": "The Defenders of Helm's Deep",
-  "armyrules": "Army Restrictions: Max 33% of models may have the Lothlórien keyword. \n \nMandatory Units: Must include Théoden (General), Aragorn, Gimli, Legolas, and Haldir. \n \nInfantry models gain +1 to their Fight value when defending a barrier. \n \n"Anduril, Flame of the West": Aragorn gains Anduril for free. \n \n"All Elves": Count as being in range of a banner if they are within 3" of Aragorn. \n \n"Theoden": Cannot break while he is alive. \n \n",
+  "armyRule": "Army Restrictions: Max 33% of models may have the Lothlórien keyword. \n \nMandatory Units: Must include Théoden (General), Aragorn, Gimli, Legolas, and Haldir. \n \nInfantry models gain +1 to their Fight value when defending a barrier. \n \n"Anduril, Flame of the West": Aragorn gains Anduril for free. \n \n"All Elves": Count as being in range of a banner if they are within 3" of Aragorn. \n \n"Theoden": Cannot break while he is alive. \n \n",
   "heroes": [
     {
       "id": "theoden_hd",
