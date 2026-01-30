@@ -3,4 +3,5 @@
   { "name": "Atop the Walls", "file": "minas_tirith.json" },
   { "name": "The Rangers of Ithilien", "file": "ithilien.json" },
   { "name": "Mordor", "file": "mordor.json" },
+  { "name": "Arnor", "file": "arnor.json" }
 ]
